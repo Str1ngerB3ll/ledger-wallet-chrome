@@ -3,7 +3,7 @@
     "version": "0.0.1",
     "private": true,
     "scripts": {
-       "preinstall": "npm install -g gulp"
+       "preinstall": "npm install -g gulp && sh ./install_nacl_sdk.sh"
     },
     "dependencies": {
         "node-watch": "0.3.4",
