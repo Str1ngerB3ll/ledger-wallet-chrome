@@ -78,6 +78,9 @@
         'utils/crypto/sha256'
         'utils/crypto/base58'
 
+        # SQLite
+        'utils/sqlite/sqlite'
+
         'utils/bitcoin/bitcoin'
         'utils/bitcoin/bip39_wordlist'
         'utils/bitcoin/bip39'

@@ -19,39 +19,16 @@ bool SqliteBridgeInstance::Init(uint32_t /*argc*/, const char * [] /*argn*/, con
 }
 
 void SqliteBridgeInstance::HandleMessage(const pp::Var& var_message) {
-//  const char kTokenMessage[] = "token:";
-//  const size_t kTokenMessageLen = strlen(kTokenMessage);
-//  const char kGetFileMessage[] = "getFile";
-//
-//  if (!var_message.is_string()) {
-//    return;
-//  }
-//
-//  std::string message = var_message.AsString();
-//  printf("Got message: \"%s\"\n", message.c_str());
-//  if (message.compare(0, kTokenMessageLen, kTokenMessage) == 0) {
-//    // Auth token
-//    std::string auth_token = message.substr(kTokenMessageLen);
-//    worker_thread_.message_loop().PostWork(callback_factory_.NewCallback(
-//        &Instance::ThreadSetAuthToken, auth_token));
-//  } else if (message == kGetFileMessage) {
-//    // Request
-//    if (!is_processing_request_) {
-//      is_processing_request_ = true;
-//      worker_thread_.message_loop().PostWork(
-//          callback_factory_.NewCallback(&Instance::ThreadRequestThunk));
-//    }
-//  }
-}
+    // Ignore the message if it is not a string.
+    if (!var_message.is_string())
+      return;
 
-void SqliteBridgeInstance::PostMessagef(const char* format, ...) {
-//  const size_t kBufferSize = 1024;
-//  char buffer[kBufferSize];
-//  va_list args;
-//  va_start(args, format);
-//  vsnprintf(&buffer[0], kBufferSize, format, args);
-//
-//  PostMessage(buffer);
+    // Get the string message and compare it to "hello".
+    std::string message = var_message.AsString();
+     LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Got message from native " + message));
+    pp::Var var_reply("Hello World");
+    PostMessage(var_reply);
+    LogToConsole(PP_LOGLEVEL_LOG, pp::Var(message + " sent"));
 }
 
 class Module : public pp::Module {

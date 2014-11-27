@@ -2,7 +2,7 @@
     "program": {
         "portable": {
             "pnacl-translate": {
-                "url": "../sqlite_bridge/sqlite_bridge.final.pexe"
+                "url": "sqlite_bridge.final.pexe"
                 }
             }
         }
