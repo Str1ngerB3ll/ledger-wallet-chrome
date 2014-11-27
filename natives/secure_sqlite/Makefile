@@ -4,15 +4,20 @@
 # Based on botansqlite3 git@github.com:OlivierJG/botansqlite3.git
 #
 
-CC 		= cc
+NACL_SDK_ROOT ?= $(abspath $(CURDIR)/../../nacl_sdk/pepper_37/)
 
-CPP 	= g++
+CC 		= ../../nacl_sdk/pepper_37/toolchain/mac_pnacl/bin/pnacl-clang
 
-AR		= ar
+CPP 	= ../../nacl_sdk/pepper_37/toolchain/mac_pnacl/bin/pnacl-clang++
 
-CFLAGS 	=
+AR		= ../../nacl_sdk/pepper_37/toolchain/mac_pnacl/bin/pnacl-ar
 
-CXFLAGS =
+
+include $(NACL_SDK_ROOT)/tools/common.mk
+
+CFLAGS 	= -I$(NACL_SDK_ROOT)include -I$(NACL_SDK_ROOT)include/sys -DPPAPI
+
+CXFLAGS = -I$(NACL_SDK_ROOT)include -lnacl_io -lppapi_simple -lnacl_io -pthread -lppapi_cpp -lppapi
 
 LIBNAME	= libsecuresqlite.a
 
@@ -31,7 +36,6 @@ OBJ_CXX = $(SRC_CXX:.cpp=.o)
 .cpp.o:
 	$(CPP) -o $@ -c $< $(CXFLAGS)
 
-
 all: 	build_c build_cpp build_lib
 
 build_c: $(OBJ)
@@ -43,10 +47,3 @@ build_lib:
 
 re: clean all
 
-clean:
-		rm -rf *.o
-
-test: 	re
-		$(CPP) main.cpp libsecuresqlite.a -lcrypto
-		rm test.sqlite
-		./a.out

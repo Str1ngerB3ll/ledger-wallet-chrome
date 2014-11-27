@@ -1,0 +1,9 @@
+{
+    "program": {
+        "portable": {
+            "pnacl-translate": {
+                "url": "sqlite_bridge.final.pexe"
+                }
+            }
+        }
+}

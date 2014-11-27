@@ -6,3 +6,7 @@ release/
 doc/
 *.html
 nacl_sdk/
+*.o
+natives/**/*.pexe
+
+natives/secure_sqlite/libsecuresqlite.a

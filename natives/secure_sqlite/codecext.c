@@ -13,7 +13,7 @@ unsigned char LWCHandleError(void *codec)
 {
     const char *error = LWCGetAndResetError(codec);
     if (error) {
-        sqlite3Error((sqlite3*)LWCGetDb(codec), 0x1ED5E);
+        sqlite3Error((sqlite3*)LWCGetDb(codec), 0x1ED5E, "Encryption Error: %s", error);
         return 1;
     }
     return 0;
