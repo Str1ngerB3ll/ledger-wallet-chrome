@@ -19,9 +19,18 @@ bool SqliteBridgeInstance::Init(uint32_t /*argc*/, const char * [] /*argn*/, con
 }
 
 void SqliteBridgeInstance::HandleMessage(const pp::Var& var_message) {
-    // Ignore the message if it is not a string.
-    if (!var_message.is_string())
-      return;
+    // Ignore the message if it is not a dictionary.
+    if (!var_message.is_dictionary())
+      return ;
+
+    pp::VarDictionary request(var_message);
+
+    // Ignore the message if it has no magic.
+    if (!request.HasKey(pp::Var("magic")))
+        return ;
+
+    if (request.Get(pp::Var("magic")) == pp::Var("sqlite"))
+        HandleSqliteRequest(request);
 
     // Get the string message and compare it to "hello".
     std::string message = var_message.AsString();
@@ -29,6 +38,16 @@ void SqliteBridgeInstance::HandleMessage(const pp::Var& var_message) {
     pp::Var var_reply("Hello World");
     PostMessage(var_reply);
     LogToConsole(PP_LOGLEVEL_LOG, pp::Var(message + " sent"));
+}
+
+void SqliteBridgeInstance::HandleSqliteRequest(const pp::VarDictionary& request)
+{
+    HandleSqliteCommand(const_cast<SqliteBridgeInstance *>(this), request);
+}
+
+void SqliteBridgeInstance::PostResponse(const pp::VarDictionary& request, pp::VarDictionary& response)
+{
+
 }
 
 class Module : public pp::Module {

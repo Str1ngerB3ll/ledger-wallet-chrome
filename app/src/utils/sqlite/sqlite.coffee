@@ -30,20 +30,20 @@ _.extend ledger.sqlite,
 
   sqlite3_key: (db, key, keyLength, callback) -> postCommand({command: CommandType.SQLITE_KEY, key, keyLength}, callback)
 
-  __handleMessage: (event) ->
-    if event.data.magic is 'sqlite'
-      listener = ledger.sqlite.__listenners[event.request_id]
+  __handleMessage: (event, data) ->
+    if data?.magic? is 'sqlite'
+      listener = ledger.sqlite.__listenners[data.request_id]
       if listener?
-        delete ledger.sqlite.__listenners[event.request_id]
-        listener(event.data)
+        delete ledger.sqlite.__listenners[data.request_id]
+        listener(data)
 
   __handleError: (event) ->
-
+    e 'Sqlite ERROR'
 
   __handleCrash: (event) ->
+    e 'SQlite CRASH'
 
   __listenners: {}
-
 
 $ () ->
   $('embed[name="sqlite_bridge"]').on 'message', ledger.sqlite.__handleMessage
