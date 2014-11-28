@@ -48,10 +48,8 @@ void SqliteBridgeInstance::HandleMessage(const pp::Var& var_message) {
 
     // Get the string message and compare it to "hello".
     std::string message = var_message.AsString();
-     LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Got message from native " + message));
     pp::Var var_reply("Hello World");
     PostMessage(var_reply);
-    LogToConsole(PP_LOGLEVEL_LOG, pp::Var(message + " sent"));
 }
 
 void SqliteBridgeInstance::HandleSqliteRequest(const pp::VarDictionary& request)

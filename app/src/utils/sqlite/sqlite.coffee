@@ -1,4 +1,14 @@
 
+test_insert = (db, count, callback) =>
+  ledger.sqlite.sqlite3_exec db, "INSERT INTO Test VALUES(#{count}, 'hello world');", (result) =>
+    e result.error if result.success is false
+    if count < 0
+      callback?()
+    else
+      test_insert(db, count - 1, callback)
+
+
+
 CommandType =
   SQLITE_OPEN : 0
   SQLITE_CLOSE : 1
@@ -19,7 +29,7 @@ SqlDataType =
 postCommand = (command, callback) ->
   command.magic = "sqlite"
   command.request_id = _.uniqueId()
-  ledger.sqlite.__listenners[command.request_id] = command
+  ledger.sqlite.__listenners[command.request_id] = callback
   $('embed[name="sqlite_bridge"]')[0].postMessage(command)
 
 ledger.sqlite ?= {}
@@ -28,14 +38,15 @@ _.extend ledger.sqlite,
 
   sqlite3_open: (databaseName, callback) -> postCommand({command: CommandType.SQLITE_OPEN, databaseName: databaseName}, callback)
 
-  sqlite3_key: (db, key, keyLength, callback) -> postCommand({command: CommandType.SQLITE_KEY, key, keyLength}, callback)
+  sqlite3_key: (db, key , callback) -> postCommand({command: CommandType.SQLITE_KEY, key: key}, callback)
 
   sqlite3_close: (db, callback) -> postCommand {command: CommandType.SQLITE_CLOSE, db: db}, callback
 
+  sqlite3_exec: (db, statement, callback) -> postCommand {command: CommandType.SQLITE_EXEC, db, statement}, callback
+
   __handleMessage: (event) ->
     data = event.data
-    l data
-    if data?.magic? is 'sqlite'
+    if data.magic is 'sqlite'
       listener = ledger.sqlite.__listenners[data.request_id]
       if listener?
         delete ledger.sqlite.__listenners[data.request_id]
@@ -48,6 +59,16 @@ _.extend ledger.sqlite,
     e 'SQlite CRASH'
 
   __listenners: {}
+
+  sqlite3_integration_test: () ->
+    ledger.sqlite.sqlite3_open '/persistent/test.sqlite', (result) =>
+      ledger.sqlite.sqlite3_key result.db, ledger.crypto.SHA256.hashString("merguez"), =>
+        ledger.sqlite.sqlite3_exec result.db, "CREATE TABLE Test(iteration INTEGER, test TEXT);", (result) =>
+          l "create result", result
+          test_insert result.db, 100, =>
+            l 'Insertion DONE'
+
+
 
 $ () ->
   $('embed[name="sqlite_bridge"]')[0].addEventListener 'message', ledger.sqlite.__handleMessage, true
