@@ -17,7 +17,7 @@ include $(NACL_SDK_ROOT)/tools/common.mk
 
 CXFLAGS = -I$(NACL_SDK_ROOT)include -O2 -I../secure_sqlite/
 
-LDFLAGS =  -L$(NACL_SDK_ROOT)/lib/pnacl/Release -lnacl_io -lppapi_simple -lnacl_io -pthread -lppapi_cpp -lppapi -O2 $(DEPS) -L../openssl -L../secure_sqlite -lsecuresqlite -lcrypto
+LDFLAGS =  -L$(NACL_SDK_ROOT)/lib/pnacl/Release -lnacl_io -lppapi_simple -pthread -lppapi_cpp -lppapi -O2 $(DEPS) -L../openssl -L../secure_sqlite -lsecuresqlite -lcrypto
 
 PEXE_NAME	= sqlite_bridge.pexe
 

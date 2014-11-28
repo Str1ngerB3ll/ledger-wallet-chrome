@@ -7,15 +7,29 @@
 
 #include "sqlite_bridge.h"
 
-SqliteBridgeInstance::SqliteBridgeInstance(PP_Instance instance) : pp::Instance(instance)
+SqliteBridgeInstance::SqliteBridgeInstance(PP_Instance instance, PPB_GetInterface interface) : pp::Instance(instance), _interface(interface)
 {
 
 }
 
 bool SqliteBridgeInstance::Init(uint32_t /*argc*/, const char * [] /*argn*/, const char * [] /*argv*/)
 {
-  LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Hello from native"));
-  return true;
+    LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Hello from native"));
+    nacl_io_init_ppapi(pp_instance(), _interface);
+
+    // By default, nacl_io mounts / to pass through to the original NaCl
+    // filesystem (which doesn't do much). Let's remount it to a memfs
+    // filesystem.
+    umount("/");
+    mount("", "/", "memfs", 0, "");
+
+    mount("",                                       /* source */
+          "/persistent",                            /* target */
+          "html5fs",                                /* filesystemtype */
+          0,                                        /* mountflags */
+          "type=PERSISTENT,expected_size=1048576"); /* data */
+    LogToConsole(PP_LOGLEVEL_LOG, pp::Var("File system mounted"));
+    return true;
 }
 
 void SqliteBridgeInstance::HandleMessage(const pp::Var& var_message) {
@@ -47,7 +61,9 @@ void SqliteBridgeInstance::HandleSqliteRequest(const pp::VarDictionary& request)
 
 void SqliteBridgeInstance::PostResponse(const pp::VarDictionary& request, pp::VarDictionary& response)
 {
-
+    response.Set(pp::Var("magic"), request.Get(pp::Var("magic")));
+    response.Set(pp::Var("request_id"), request.Get(pp::Var("request_id")));
+    PostMessage(response);
 }
 
 class Module : public pp::Module {
@@ -56,7 +72,7 @@ class Module : public pp::Module {
   virtual ~Module() {}
 
   virtual pp::Instance* CreateInstance(PP_Instance instance) {
-    return new SqliteBridgeInstance(instance);
+    return new SqliteBridgeInstance(instance, get_browser_interface());
   }
 };
 

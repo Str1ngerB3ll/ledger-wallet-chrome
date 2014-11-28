@@ -13,6 +13,8 @@
 #include <ppapi/cpp/var.h>
 #include <ppapi/cpp/var_dictionary.h>
 #include <ppapi/cpp/var_array.h>
+#include <sqlite3.h>
+#include <errno.h>
 #include "sqlite_bridge.h"
 
 class SqliteBridgeInstance;

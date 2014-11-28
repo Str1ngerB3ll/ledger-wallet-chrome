@@ -1,8 +1,8 @@
 
 CommandType =
   SQLITE_OPEN : 0
-  SQLITE_KEY : 1
-  SQLITE_CLOSE : 2
+  SQLITE_CLOSE : 1
+  SQLITE_KEY : 2
   SQLITE_EXEC : 3
   SQLITE_PREPARE : 4
   SQLITE_BIND : 5
@@ -30,7 +30,11 @@ _.extend ledger.sqlite,
 
   sqlite3_key: (db, key, keyLength, callback) -> postCommand({command: CommandType.SQLITE_KEY, key, keyLength}, callback)
 
-  __handleMessage: (event, data) ->
+  sqlite3_close: (db, callback) -> postCommand {command: CommandType.SQLITE_CLOSE, db: db}, callback
+
+  __handleMessage: (event) ->
+    data = event.data
+    l data
     if data?.magic? is 'sqlite'
       listener = ledger.sqlite.__listenners[data.request_id]
       if listener?
@@ -46,6 +50,6 @@ _.extend ledger.sqlite,
   __listenners: {}
 
 $ () ->
-  $('embed[name="sqlite_bridge"]').on 'message', ledger.sqlite.__handleMessage
+  $('embed[name="sqlite_bridge"]')[0].addEventListener 'message', ledger.sqlite.__handleMessage, true
   $('embed[name="sqlite_bridge"]').on 'error', ledger.sqlite.__handleError
   $('embed[name="sqlite_bridge"]').on 'crash', ledger.sqlite.__handleCrash

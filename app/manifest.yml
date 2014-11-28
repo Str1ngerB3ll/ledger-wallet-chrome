@@ -15,6 +15,7 @@ permissions:
   - "*://*.ledgerwallet.com/*"
   - "*://*.chain.com/v2/notifications/*"
   - "storage"
+  - "unlimitedStorage"
   - "usb"
   - "hid"
   -
