@@ -15,9 +15,9 @@ AR		= ../../nacl_sdk/pepper_37/toolchain/mac_pnacl/bin/pnacl-ar
 
 include $(NACL_SDK_ROOT)/tools/common.mk
 
-CFLAGS 	= -I$(NACL_SDK_ROOT)include -I$(NACL_SDK_ROOT)include/sys -DPPAPI
+CFLAGS 	= -I$(NACL_SDK_ROOT)/include -I$(NACL_SDK_ROOT)include/sys -DPPAPI -I..
 
-CXFLAGS = -I$(NACL_SDK_ROOT)include -lnacl_io -lppapi_simple -lnacl_io -pthread -lppapi_cpp -lppapi
+CXFLAGS = -I$(NACL_SDK_ROOT)/include -lnacl_io -lppapi_simple -lnacl_io -pthread -lppapi_cpp -lppapi -I..
 
 LIBNAME	= libsecuresqlite.a
 

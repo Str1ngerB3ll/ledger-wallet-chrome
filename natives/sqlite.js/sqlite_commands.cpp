@@ -7,6 +7,21 @@
 
 #include "sqlite_commands.h"
 
+
+#define VarToString(var) _VarToString(bridgeInstance, var)
+
+const char *_VarToString(SqliteBridgeInstance * bridgeInstance, const pp::Var& var)
+{
+    if (!var.is_string())
+        return NULL;
+    uint32_t length;
+    const char *utf8String = bridgeInstance->getPpbVar()->VarToUtf8(var.pp_var(), &length);
+    char *string = new char[length + 1];
+    memcpy(string, utf8String, length * sizeof(char));
+    string[length] = '\0';
+    return string;
+}
+
 typedef void (*CommandFunction)(SqliteBridgeInstance * bridgeInstance, const pp::VarDictionary& request);
 
 static std::vector<sqlite3 *> OpenedDatabases;
@@ -35,8 +50,17 @@ static void HandleSqliteOpen(SqliteBridgeInstance * bridgeInstance, const pp::Va
     sqlite3 *db;
     pp::VarDictionary response;
 
-    const char *filename = request.Get(pp::Var("databaseName")).AsString().c_str();
-    int rc = sqlite3_open_v2(filename, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX, "unix-none");
+FILE *f=fopen("/file.txt","r");
+        int size;
+        char buffer[20000];
+        // ...
+        size=fread(buffer,2000,sizeof(char),f);
+        bridgeInstance->LogToConsole(PP_LOGLEVEL_LOG, pp::Var(buffer));
+        fclose(f);
+
+
+    const char *filename = VarToString(request.Get(pp::Var("databaseName")));
+    int rc = sqlite3_open_v2(filename, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX, "unix");
     if (rc)
     {
        bridgeInstance->LogToConsole(PP_LOGLEVEL_LOG, pp::Var("FAILURE"));
@@ -105,13 +129,14 @@ static void HandleSqliteKey(SqliteBridgeInstance * bridgeInstance, const pp::Var
 
     sqlite3 *db = OpenedDatabases[request.Get(pp::Var("db")).AsInt()];
     unsigned int keyLength;
+    bridgeInstance->LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Before Convert"));
     const unsigned char *key = convert(request.Get(pp::Var("key")).AsString().c_str(), &keyLength);
+    bridgeInstance->LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Before Key"));
     sqlite3_key(db, key, keyLength);
+    bridgeInstance->LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Key OK"));
     pp::VarDictionary response;
-    free((void *)key);
     response.Set(pp::Var("success"), pp::Var(true));
     bridgeInstance->PostResponse(request, response);
-    sqlite3_exec(db, "CREATE TABLE Test(iteration INTEGER, test TEXT);", NULL, 0, NULL);
 }
 
 static pp::VarDictionary *CurrentExecResponse;
@@ -150,18 +175,17 @@ int SqliteExecCallback(void *p_data, int num_fields, char **p_fields, char **p_c
 static void HandleSqliteExec(SqliteBridgeInstance * bridgeInstance, const pp::VarDictionary& request)
 {
     bridgeInstance->LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Exec"));
-    bridgeInstance->LogToConsole(PP_LOGLEVEL_LOG, request.Get(pp::Var("statement")));
-
 
     sqlite3 *db = OpenedDatabases[request.Get(pp::Var("db")).AsInt()];
     pp::VarDictionary response;
     CurrentExecResponse = &response;
-    const char *statement = request.Get(pp::Var("statement")).AsString().data();
+    const char *statement = VarToString(request.Get(pp::Var("statement")));
 
     bridgeInstance->LogToConsole(PP_LOGLEVEL_LOG, pp::Var(statement));
 
     int nrecs;
     char *errmsg;
+
     const int rc = sqlite3_exec(db, statement, SqliteExecCallback, &nrecs, &errmsg);
 
     if (rc != SQLITE_OK)
@@ -175,6 +199,7 @@ static void HandleSqliteExec(SqliteBridgeInstance * bridgeInstance, const pp::Va
         response.Set(pp::Var("count"), pp::Var(nrecs));
     }
     bridgeInstance->PostResponse(request, response);
+    delete[] statement;
 }
 
 static std::vector<sqlite3_stmt *> Statements;
