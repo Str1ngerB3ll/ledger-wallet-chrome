@@ -23,7 +23,7 @@ PEXE_NAME	= sqlite_bridge.pexe
 
 FINAL_PEXE_NAME = sqlite_bridge.final.pexe
 
-SRC_CXX = 	sqlite_bridge.cpp sqlite_commands.cpp
+SRC_CXX = 	sqlite_bridge.cpp sqlite_commands.cpp sqlite_nacl_vfs.cpp
 
 OBJ_CXX = $(SRC_CXX:.cpp=.o)
 

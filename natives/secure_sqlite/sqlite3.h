@@ -36,6 +36,7 @@
 
 #define SQLITE_HAS_CODEC 1
 #define SQLITE_OMIT_LOAD_EXTENSION 1
+#define SQLITE_TEMP_STORE 3
 /*
 ** Make sure we can call this stuff from C++.
 */

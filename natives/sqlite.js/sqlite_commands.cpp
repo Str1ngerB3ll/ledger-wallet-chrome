@@ -50,7 +50,7 @@ static void HandleSqliteOpen(SqliteBridgeInstance * bridgeInstance, const pp::Va
     sqlite3 *db;
     pp::VarDictionary response;
 
-FILE *f=fopen("/file.txt","r");
+FILE *f=fopen("/test.txt","r");
         int size;
         char buffer[20000];
         // ...
@@ -60,7 +60,7 @@ FILE *f=fopen("/file.txt","r");
 
 
     const char *filename = VarToString(request.Get(pp::Var("databaseName")));
-    int rc = sqlite3_open_v2(filename, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX, "unix");
+    int rc = sqlite3_open_v2(filename, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX, "nacl");
     if (rc)
     {
        bridgeInstance->LogToConsole(PP_LOGLEVEL_LOG, pp::Var("FAILURE"));
@@ -104,8 +104,9 @@ static void HandleSqliteClose(SqliteBridgeInstance * bridgeInstance, const pp::V
 
     sqlite3 *db = OpenedDatabases[request.Get(pp::Var("db")).AsInt()];
     pp::VarDictionary response;
-
+    bridgeInstance->LogToConsole(PP_LOGLEVEL_LOG, request.Get(pp::Var("db")));
     int rc = sqlite3_close_v2(db);
+    bridgeInstance->LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Close DB 2"));
     if (rc == SQLITE_OK)
     {
         OpenedDatabases[request.Get(pp::Var("db")).AsInt()] = NULL;

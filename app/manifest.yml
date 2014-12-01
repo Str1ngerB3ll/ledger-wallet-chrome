@@ -27,9 +27,6 @@ permissions:
       -
         vendorId: 9601
         productId: 11132
-  -
-    socket
-      - "resolve-host"
 
 externally_connectable:
   matches:

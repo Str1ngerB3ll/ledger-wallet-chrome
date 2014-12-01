@@ -68,7 +68,7 @@ _.extend ledger.sqlite,
           l "create result", result
           test_insert result.db, 100, =>
             l 'Insertion DONE'
-            ledger.sqlite.sqlite3_close result.db
+            ledger.sqlite.sqlite3_close 0
 
   sqlite3_integration_test_no_create: () ->
     ledger.sqlite.sqlite3_open '/persistent/test.sqlite', (result) =>
@@ -76,7 +76,8 @@ _.extend ledger.sqlite,
       ledger.sqlite.sqlite3_key result.db, ledger.crypto.SHA256.hashString("merguez"), =>
           l "create result", result
           test_insert result.db, 100, =>
-            l 'Insertion DONE'
+            l 'Insertion DONE', result
+            l result
             ledger.sqlite.sqlite3_close result.db
 
 

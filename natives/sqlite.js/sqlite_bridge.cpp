@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
+#include "sqlite_nacl_vfs.h"
 
 static bool HTML5FS_IS_MOUNTED = false;
 
@@ -53,7 +54,7 @@ void SqliteBridgeInstance::HandleMessage(const pp::Var& var_message) {
 void SqliteBridgeInstance::OpenFileSystem(int32_t)
 {
     LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Open File System"));
-
+    sqlite3_vfs_register(sqlite3_nacl_vfs(), 0);
     // By default, nacl_io mounts / to pass through to the original NaCl
     // filesystem (which doesn't do much). Let's remount it to a memfs
     // filesystem.
@@ -66,36 +67,31 @@ void SqliteBridgeInstance::OpenFileSystem(int32_t)
           0,                                        /* mountflags */
           "expected_size=1048576"); /* data */
      LogToConsole(PP_LOGLEVEL_LOG, pp::Var(strerror(errno)));
-    FILE *f = fopen("/file.txt", "w");
-    if (f == NULL)
+    {
+    std::ofstream myfile;
+    myfile.open ("/test.txt");
+
+    if (!myfile.is_open())
     {
         LogToConsole(PP_LOGLEVEL_LOG, pp::Var(strerror(errno)));
         return;
     }
-
+     myfile << "Writing this to a file.\n";
+        myfile.close();
     /* print some text */
-    const char *text = "Write this to the file";
-    fprintf(f, "Some text: %s\n", text);
-
-    /* print integers and floats */
-    int i = 1;
-    float py = 3.1415927;
-    fprintf(f, "Integer: %d, float: %f\n", i, py);
-
-    /* printing single chatacters */
-    char c = 'A';
-    fprintf(f, "A character: %c\n", c);
-
-    fclose(f);
-
-    f=fopen("/file.txt","r");
-        int size;
-        char buffer[20000];
-        // ...
-        size=fread(buffer,2000,sizeof(char),f);
-        LogToConsole(PP_LOGLEVEL_LOG, pp::Var(buffer));
-        fclose(f);
-
+    }
+    {
+    std::string line;
+      std::ifstream myfile ("/test.txt");
+      if (myfile.is_open())
+      {
+        while ( getline (myfile,line) )
+        {
+         LogToConsole(PP_LOGLEVEL_LOG, pp::Var(line));
+        }
+        myfile.close();
+      }
+    }
     LogToConsole(PP_LOGLEVEL_LOG, pp::Var("File system mounted"));
 }
 
