@@ -125,7 +125,12 @@
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <cstdio>
+
 #include "sqlite_nacl_vfs.h"
+#include "sqlite_bridge.h"
+
+#define LOG(format, ...) {char zzStr[1024]; sprintf(zzStr, format, __VA_ARGS__); INSTANCE->LogToConsole(PP_LOGLEVEL_LOG, pp::Var(zzStr));}
 
 /*
 ** Size of the write buffer used by journal files in bytes.
@@ -146,7 +151,7 @@
 typedef struct DemoFile DemoFile;
 struct DemoFile {
   sqlite3_file base;              /* Base class. Must be first. */
-  int fd;                         /* File descriptor */
+  FILE *handle;                         /* File descriptor */
 
   char *aBuffer;                  /* Pointer to malloc'd buffer */
   int nBuffer;                    /* Valid bytes of data in zBuffer */
@@ -166,13 +171,16 @@ static int demoDirectWrite(
   off_t ofst;                     /* Return value from lseek() */
   size_t nWrite;                  /* Return value from write() */
 
-  ofst = lseek(p->fd, iOfst, SEEK_SET);
+  int fd = fileno(p->handle);
+  ofst = lseek(fd, iOfst, SEEK_SET);
   if( ofst!=iOfst ){
+    LOG("Error from %s:%d", __FILE__, __LINE__);
     return SQLITE_IOERR_WRITE;
   }
 
-  nWrite = write(p->fd, zBuf, iAmt);
+  nWrite = write(fd, zBuf, iAmt);
   if( nWrite!=iAmt ){
+    LOG("Error from %s:%d", __FILE__, __LINE__);
     return SQLITE_IOERR_WRITE;
   }
 
@@ -201,7 +209,7 @@ static int demoClose(sqlite3_file *pFile){
   DemoFile *p = (DemoFile*)pFile;
   rc = demoFlushBuffer(p);
   sqlite3_free(p->aBuffer);
-  close(p->fd);
+  //fclose(p->handle);
   return rc;
 }
 
@@ -209,9 +217,9 @@ static int demoClose(sqlite3_file *pFile){
 ** Read data from a file.
 */
 static int demoRead(
-  sqlite3_file *pFile, 
-  void *zBuf, 
-  int iAmt, 
+  sqlite3_file *pFile,
+  void *zBuf,
+  int iAmt,
   sqlite_int64 iOfst
 ){
   DemoFile *p = (DemoFile*)pFile;
@@ -221,27 +229,31 @@ static int demoRead(
 
   /* Flush any data in the write buffer to disk in case this operation
   ** is trying to read data the file-region currently cached in the buffer.
-  ** It would be possible to detect this case and possibly save an 
+  ** It would be possible to detect this case and possibly save an
   ** unnecessary write here, but in practice SQLite will rarely read from
   ** a journal file when there is data cached in the write-buffer.
   */
   rc = demoFlushBuffer(p);
   if( rc!=SQLITE_OK ){
+    LOG("Error from %s:%d", __FILE__, __LINE__);
     return rc;
   }
 
-  ofst = lseek(p->fd, iOfst, SEEK_SET);
+  int fd = fileno(p->handle);
+  ofst = lseek(fd, iOfst, SEEK_SET);
   if( ofst!=iOfst ){
+    LOG("Error %s %x from %s:%d", strerror(errno), p->handle, __FILE__, __LINE__);
     return SQLITE_IOERR_READ;
   }
-  nRead = read(p->fd, zBuf, iAmt);
+  nRead = read(fd, zBuf, iAmt);
 
   if( nRead==iAmt ){
     return SQLITE_OK;
   }else if( nRead>=0 ){
+    LOG("Error from %s:%d", __FILE__, __LINE__);
     return SQLITE_IOERR_SHORT_READ;
   }
-
+  LOG("Error from %s:%d", __FILE__, __LINE__);
   return SQLITE_IOERR_READ;
 }
 
@@ -249,13 +261,13 @@ static int demoRead(
 ** Write data to a crash-file.
 */
 static int demoWrite(
-  sqlite3_file *pFile, 
-  const void *zBuf, 
-  int iAmt, 
+  sqlite3_file *pFile,
+  const void *zBuf,
+  int iAmt,
   sqlite_int64 iOfst
 ){
   DemoFile *p = (DemoFile*)pFile;
-  
+
   if( p->aBuffer ){
     char *z = (char *)zBuf;       /* Pointer to remaining data to write */
     int n = iAmt;                 /* Number of bytes at z */
@@ -266,11 +278,12 @@ static int demoWrite(
 
       /* If the buffer is full, or if this data is not being written directly
       ** following the data already buffered, flush the buffer. Flushing
-      ** the buffer is a no-op if it is empty.  
+      ** the buffer is a no-op if it is empty.
       */
       if( p->nBuffer==SQLITE_DEMOVFS_BUFFERSZ || p->iBufferOfst+p->nBuffer!=i ){
         int rc = demoFlushBuffer(p);
         if( rc!=SQLITE_OK ){
+          LOG("Error from %s:%d", __FILE__, __LINE__);
           return rc;
         }
       }
@@ -316,10 +329,12 @@ static int demoSync(sqlite3_file *pFile, int flags){
 
   rc = demoFlushBuffer(p);
   if( rc!=SQLITE_OK ){
+    LOG("Error from %s:%d", __FILE__, __LINE__);
     return rc;
   }
 
-  rc = fsync(p->fd);
+  rc = fsync(fileno(p->handle));
+  if (rc != 0)   LOG("Error from %s:%d", __FILE__, __LINE__);
   return (rc==0 ? SQLITE_OK : SQLITE_IOERR_FSYNC);
 }
 
@@ -338,11 +353,12 @@ static int demoFileSize(sqlite3_file *pFile, sqlite_int64 *pSize){
   */
   rc = demoFlushBuffer(p);
   if( rc!=SQLITE_OK ){
+    LOG("Error from %s:%d", __FILE__, __LINE__);
     return rc;
   }
 
-  rc = fstat(p->fd, &sStat);
-  if( rc!=0 ) return SQLITE_IOERR_FSTAT;
+  rc = fstat(fileno(p->handle), &sStat);
+  if( rc!=0 ){   LOG("Error from %s:%d", __FILE__, __LINE__); return SQLITE_IOERR_FSTAT;}
   *pSize = sStat.st_size;
   return SQLITE_OK;
 }
@@ -373,7 +389,7 @@ static int demoFileControl(sqlite3_file *pFile, int op, void *pArg){
 
 /*
 ** The xSectorSize() and xDeviceCharacteristics() methods. These two
-** may return special values allowing SQLite to optimize file-system 
+** may return special values allowing SQLite to optimize file-system
 ** access to some extent. But it is also safe to simply return 0.
 */
 static int demoSectorSize(sqlite3_file *pFile){
@@ -408,18 +424,19 @@ static int demoOpen(
     demoSectorSize,               /* xSectorSize */
     demoDeviceCharacteristics     /* xDeviceCharacteristics */
   };
-
   DemoFile *p = (DemoFile*)pFile; /* Populate this structure */
   int oflags = 0;                 /* flags to pass to open() call */
   char *aBuf = 0;
 
   if( zName==0 ){
+    LOG("Error from %s:%d", __FILE__, __LINE__);
     return SQLITE_IOERR;
   }
 
   if( flags&SQLITE_OPEN_MAIN_JOURNAL ){
     aBuf = (char *)sqlite3_malloc(SQLITE_DEMOVFS_BUFFERSZ);
     if( !aBuf ){
+      LOG("Error from %s:%d", __FILE__, __LINE__);
       return SQLITE_NOMEM;
     }
   }
@@ -430,9 +447,10 @@ static int demoOpen(
   if( flags&SQLITE_OPEN_READWRITE ) oflags |= O_RDWR;
 
   memset(p, 0, sizeof(DemoFile));
-  p->fd = open(zName, oflags, 0600);
-  if( p->fd<0 ){
+  p->handle = fopen(zName, "a+");
+  if( p->handle == NULL){
     sqlite3_free(aBuf);
+      LOG("Error from %s:%d", __FILE__, __LINE__);
     return SQLITE_CANTOPEN;
   }
   p->aBuffer = aBuf;
@@ -455,27 +473,8 @@ static int demoDelete(sqlite3_vfs *pVfs, const char *zPath, int dirSync){
   rc = unlink(zPath);
   if( rc!=0 && errno==ENOENT ) return SQLITE_OK;
 
-  if( rc==0 && dirSync ){
-    int dfd;                      /* File descriptor open on directory */
-    int i;                        /* Iterator variable */
-    char zDir[MAXPATHNAME+1];     /* Name of directory containing file zPath */
-
-    /* Figure out the directory name from the path of the file deleted. */
-    sqlite3_snprintf(MAXPATHNAME, zDir, "%s", zPath);
-    zDir[MAXPATHNAME] = '\0';
-    for(i=strlen(zDir); i>1 && zDir[i]!='/'; i++);
-    zDir[i] = '\0';
-
-    /* Open a file-descriptor on the directory. Sync. Close. */
-    dfd = open(zDir, O_RDONLY, 0);
-    if( dfd<0 ){
-      rc = -1;
-    }else{
-      rc = fsync(dfd);
-      close(dfd);
-    }
-  }
-  return (rc==0 ? SQLITE_OK : SQLITE_IOERR_DELETE);
+  if (rc != 0)   LOG("Error from %s:%d", __FILE__, __LINE__);
+  return SQLITE_OK;
 }
 
 #ifndef F_OK
@@ -493,9 +492,9 @@ static int demoDelete(sqlite3_vfs *pVfs, const char *zPath, int dirSync){
 ** is both readable and writable.
 */
 static int demoAccess(
-  sqlite3_vfs *pVfs, 
-  const char *zPath, 
-  int flags, 
+  sqlite3_vfs *pVfs,
+  const char *zPath,
+  int flags,
   int *pResOut
 ){
   int rc;                         /* access() return code */
@@ -516,13 +515,13 @@ static int demoAccess(
 
 /*
 ** Argument zPath points to a nul-terminated string containing a file path.
-** If zPath is an absolute path, then it is copied as is into the output 
+** If zPath is an absolute path, then it is copied as is into the output
 ** buffer. Otherwise, if it is a relative path, then the equivalent full
 ** path is written to the output buffer.
 **
 ** This function assumes that paths are UNIX style. Specifically, that:
 **
-**   1. Path components are separated by a '/'. and 
+**   1. Path components are separated by a '/'. and
 **   2. Full paths begin with a '/' character.
 */
 static int demoFullPathname(
@@ -535,7 +534,7 @@ static int demoFullPathname(
   if( zPath[0]=='/' ){
     zDir[0] = '\0';
   }else{
-    if( getcwd(zDir, sizeof(zDir))==0 ) return SQLITE_IOERR;
+    if( getcwd(zDir, sizeof(zDir))==0 ){   LOG("Error from %s:%d", __FILE__, __LINE__); return SQLITE_IOERR;}
   }
   zDir[MAXPATHNAME] = '\0';
 

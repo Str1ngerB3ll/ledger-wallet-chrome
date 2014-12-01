@@ -17,7 +17,7 @@ include $(NACL_SDK_ROOT)/tools/common.mk
 
 CFLAGS 	= -I$(NACL_SDK_ROOT)/include -I$(NACL_SDK_ROOT)include/sys -DPPAPI -I..
 
-CXFLAGS = -I$(NACL_SDK_ROOT)/include -lnacl_io -lppapi_simple -lnacl_io -pthread -lppapi_cpp -lppapi -I..
+CXFLAGS = -I$(NACL_SDK_ROOT)/include -I..
 
 LIBNAME	= libsecuresqlite.a
 

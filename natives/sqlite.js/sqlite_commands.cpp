@@ -6,7 +6,7 @@
  */
 
 #include "sqlite_commands.h"
-
+#define LOG(format, ...) {char zzStr[1024]; sprintf(zzStr, format, __VA_ARGS__); INSTANCE->LogToConsole(PP_LOGLEVEL_LOG, pp::Var(zzStr));}
 
 #define VarToString(var) _VarToString(bridgeInstance, var)
 
@@ -163,6 +163,7 @@ int SqliteExecCallback(void *p_data, int num_fields, char **p_fields, char **p_c
   for(i=0; i < num_fields; i++) {
     if (p_fields[i]) {
       printf("%20s", p_fields[i]);
+      LOG("%20s", p_fields[i]);
     }
     else {
       printf("%20s", " ");

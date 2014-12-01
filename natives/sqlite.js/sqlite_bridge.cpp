@@ -13,12 +13,15 @@
 
 static bool HTML5FS_IS_MOUNTED = false;
 
+SqliteBridgeInstance *INSTANCE;
+
 SqliteBridgeInstance::SqliteBridgeInstance(PP_Instance instance, PPB_GetInterface interface) :
     pp::Instance(instance),
     _interface(interface),
     _commands_thread(this),
     _callback_factory(this)
 {
+    INSTANCE = this;
     _ppb_var = (PPB_Var *) interface(PPB_VAR_INTERFACE);
 }
 

@@ -46,4 +46,6 @@ class SqliteBridgeInstance : public pp::Instance
     pp::SimpleThread _commands_thread;
 };
 
+extern SqliteBridgeInstance *INSTANCE;
+
 #endif
