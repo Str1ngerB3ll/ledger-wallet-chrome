@@ -130,8 +130,6 @@
 #include "sqlite_nacl_vfs.h"
 #include "sqlite_bridge.h"
 
-#define LOG(format, ...) {char zzStr[1024]; sprintf(zzStr, format, __VA_ARGS__); INSTANCE->LogToConsole(PP_LOGLEVEL_LOG, pp::Var(zzStr));}
-
 /*
 ** Size of the write buffer used by journal files in bytes.
 */
@@ -209,7 +207,7 @@ static int demoClose(sqlite3_file *pFile){
   DemoFile *p = (DemoFile*)pFile;
   rc = demoFlushBuffer(p);
   sqlite3_free(p->aBuffer);
-  //fclose(p->handle);
+  fclose(p->handle);
   return rc;
 }
 
@@ -250,7 +248,7 @@ static int demoRead(
   if( nRead==iAmt ){
     return SQLITE_OK;
   }else if( nRead>=0 ){
-    LOG("Error from %s:%d", __FILE__, __LINE__);
+    //LOG("Error from %s:%d", __FILE__, __LINE__);
     return SQLITE_IOERR_SHORT_READ;
   }
   LOG("Error from %s:%d", __FILE__, __LINE__);
@@ -450,7 +448,7 @@ static int demoOpen(
   p->handle = fopen(zName, "a+");
   if( p->handle == NULL){
     sqlite3_free(aBuf);
-      LOG("Error from %s:%d", __FILE__, __LINE__);
+      LOG("Error %s from %s:%d",zName, __FILE__, __LINE__);
     return SQLITE_CANTOPEN;
   }
   p->aBuffer = aBuf;

@@ -9,6 +9,8 @@
 #include "sqlite3.c"
 #include "codecext.h"
 
+extern void JLOG(const char *format);
+
 unsigned char LWCHandleError(void *codec)
 {
     const char *error = LWCGetAndResetError(codec);
@@ -23,17 +25,20 @@ unsigned char LWCHandleError(void *codec)
 void sqlite3PagerFreeCodec(void *codec)
 {
   LWCFreeCodec(codec);
+  JLOG("C Free");
 }
 
 // Report the page size to the codec, called from pager.c (address passed in sqlite3PagerSetCodec)
 void sqlite3CodecSizeChange(void *codec, int pageSize, int reserve)
 {
+ JLOG("C Size changed");
     LWCSetPageSize(codec, pageSize);
 }
 
 // Encrypt/Decrypt functionality, called by pager.c
 void* sqlite3Codec(void *codec, void *data, Pgno pageNum, int mode)
 {
+  JLOG("Codec");
     if (codec == NULL) //Db not encrypted
         return data;
 
@@ -64,12 +69,14 @@ void* sqlite3Codec(void *codec, void *data, Pgno pageNum, int mode)
 */
 int sqlite3_key(sqlite3 *db, const void *key, int keyLength)
 {
+  JLOG("C key");
   // The key is only set for the main database, not the temp database
   return sqlite3CodecAttach(db, 0, key, keyLength);
 }
 
 int sqlite3_key_v2(sqlite3 *db, const char *dbName, const void *key, int keyLength)
 {
+  JLOG("C key 2");
   return sqlite3_key(db, key, keyLength);
 }
 
@@ -83,12 +90,14 @@ int sqlite3_key_v2(sqlite3 *db, const char *dbName, const void *key, int keyLeng
 */
 int sqlite3_rekey(sqlite3 *db, const void *key, int keyLength)
 {
+  JLOG("C rekey");
  // Not supported yet
-  return SQLITE_ERROR;
+  return SQLITE_OK;
 }
 
 int sqlite3_rekey_v2(sqlite3 *db, const char *dbName, const void *key, int keyLength)
 {
+      JLOG("C rekey 2");
   return sqlite3_rekey(db, key, keyLength);
 }
 
@@ -99,10 +108,12 @@ int sqlite3_rekey_v2(sqlite3 *db, const char *dbName, const void *key, int keyLe
 void sqlite3_activate_see(const char *passPhrase)
 {
  // Useless
+   JLOG("C activate");
 }
 
 int sqlite3CodecAttach(sqlite3 *db, int nDb, const void *key, int keyLength)
 {
+  JLOG("C attach");
   void *codec;
 
   if (key == NULL && keyLength <= 0 && nDb != 0)
@@ -129,6 +140,7 @@ int sqlite3CodecAttach(sqlite3 *db, int nDb, const void *key, int keyLength)
 
 void sqlite3CodecGetKey(sqlite3* db, int nDb, void **zKey, int *nKey)
 {
+  JLOG("C get key");
     // The unencrypted password is not stored for security reasons
     // therefore always return NULL
     *zKey = NULL;

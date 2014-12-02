@@ -36,7 +36,7 @@ class SqliteBridgeInstance : public pp::Instance
     const PPB_Var *getPpbVar() const { return _ppb_var; };
 
     private:
-    void HandleSqliteRequest(int32_t, const pp::VarDictionary& request);
+    void HandleSqliteRequest(int32_t, pp::VarDictionary request);
     void OpenFileSystem(int32_t);
 
     private:
@@ -46,6 +46,12 @@ class SqliteBridgeInstance : public pp::Instance
     pp::SimpleThread _commands_thread;
 };
 
-extern SqliteBridgeInstance *INSTANCE;
+#define ENABLE_GLOBAL_LOGGING 1
 
+#ifdef ENABLE_GLOBAL_LOGGING
+extern SqliteBridgeInstance *INSTANCE;
+#define LOG(format, ...) {char zzStr[1024]; sprintf(zzStr, format,##__VA_ARGS__); INSTANCE->LogToConsole(PP_LOGLEVEL_LOG, pp::Var(zzStr));}
+#else
+#define LOG(format, ...)
+#endif
 #endif

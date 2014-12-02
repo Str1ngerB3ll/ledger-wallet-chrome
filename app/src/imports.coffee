@@ -73,6 +73,7 @@
         'utils/pin_codes'
         'utils/lru'
         'utils/formatters'
+        'utils/benchmark'
 
         'utils/crypto/aes'
         'utils/crypto/sha256'

@@ -13,7 +13,11 @@
 
 static bool HTML5FS_IS_MOUNTED = false;
 
+extern "C" void JLOG(const char* format) {LOG(format);}
+
+#ifdef ENABLE_GLOBAL_LOGGING
 SqliteBridgeInstance *INSTANCE;
+#endif
 
 SqliteBridgeInstance::SqliteBridgeInstance(PP_Instance instance, PPB_GetInterface interface) :
     pp::Instance(instance),
@@ -21,13 +25,15 @@ SqliteBridgeInstance::SqliteBridgeInstance(PP_Instance instance, PPB_GetInterfac
     _commands_thread(this),
     _callback_factory(this)
 {
+#ifdef ENABLE_GLOBAL_LOGGING
     INSTANCE = this;
+#endif
     _ppb_var = (PPB_Var *) interface(PPB_VAR_INTERFACE);
 }
 
 bool SqliteBridgeInstance::Init(uint32_t /*argc*/, const char * [] /*argn*/, const char * [] /*argv*/)
 {
-    LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Hello from native"));
+    LOG("Hello from native");
     nacl_io_init_ppapi(pp_instance(), _interface);
     _commands_thread.Start();
     return true;
@@ -56,49 +62,21 @@ void SqliteBridgeInstance::HandleMessage(const pp::Var& var_message) {
 
 void SqliteBridgeInstance::OpenFileSystem(int32_t)
 {
-    LogToConsole(PP_LOGLEVEL_LOG, pp::Var("Open File System"));
+    LOG("Open File System");
     sqlite3_vfs_register(sqlite3_nacl_vfs(), 0);
     // By default, nacl_io mounts / to pass through to the original NaCl
     // filesystem (which doesn't do much). Let's remount it to a memfs
     // filesystem.
     umount("/");
-    //mount("", "/", "memfs", 0, "");
- LogToConsole(PP_LOGLEVEL_LOG, pp::Var(strerror(errno)));
     mount("",                                       /* source */
           "/",                            /* target */
           "html5fs",                                /* filesystemtype */
           0,                                        /* mountflags */
           "expected_size=1048576"); /* data */
-     LogToConsole(PP_LOGLEVEL_LOG, pp::Var(strerror(errno)));
-    {
-    std::ofstream myfile;
-    myfile.open ("/test.txt");
-
-    if (!myfile.is_open())
-    {
-        LogToConsole(PP_LOGLEVEL_LOG, pp::Var(strerror(errno)));
-        return;
-    }
-     myfile << "Writing this to a file.\n";
-        myfile.close();
-    /* print some text */
-    }
-    {
-    std::string line;
-      std::ifstream myfile ("/test.txt");
-      if (myfile.is_open())
-      {
-        while ( getline (myfile,line) )
-        {
-         LogToConsole(PP_LOGLEVEL_LOG, pp::Var(line));
-        }
-        myfile.close();
-      }
-    }
-    LogToConsole(PP_LOGLEVEL_LOG, pp::Var("File system mounted"));
+    LOG("File system mounted");
 }
 
-void SqliteBridgeInstance::HandleSqliteRequest(int32_t, const pp::VarDictionary& request)
+void SqliteBridgeInstance::HandleSqliteRequest(int32_t, pp::VarDictionary request)
 {
     HandleSqliteCommand(const_cast<SqliteBridgeInstance *>(this), request);
 }

@@ -8,6 +8,7 @@
 
 #include "aes_codec.h"
 #include <iostream>
+#include <cstdio>
 
 AesCodec::AesCodec(const void *db) : Codec(db)
 {
@@ -27,20 +28,20 @@ void AesCodec::setEncryptionKey(const unsigned char *encryptionKey, const int en
 		return ;
 	}
 	Codec::setEncryptionKey(encryptionKey, encryptionKeyLength);
-	AES_set_encrypt_key(encryptionKey, 256, &_encryptKey);
-    AES_set_decrypt_key(encryptionKey, 256, &_decryptKey);
+	AES_set_encrypt_key(getEncryptionKey(), 256, &_encryptKey);
+    AES_set_decrypt_key(getEncryptionKey(), 256, &_decryptKey);
 }
 
 unsigned char *AesCodec::encrypt(int page, unsigned char *data)
 {
-	unsigned char iv[] = "asdfghjklpoiuytr";
+	unsigned char iv[] = "ledger.wallet.01";
 	AES_cbc_encrypt(data, _page, getPageSize(), &_encryptKey, iv, AES_ENCRYPT);
 	return _page;
 }
 
 void AesCodec::decrypt(int page, unsigned char *data)
 {
-	unsigned char iv[] = "asdfghjklpoiuytr";
+	unsigned char iv[] = "ledger.wallet.01";
 	AES_cbc_encrypt(data, _page, sizeof(_page), &_decryptKey, iv, AES_DECRYPT);
 	memcpy(data, _page, getPageSize());
 }

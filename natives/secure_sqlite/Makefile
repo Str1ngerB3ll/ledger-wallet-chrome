@@ -45,5 +45,10 @@ build_cpp: $(OBJ_CXX)
 build_lib:
 	$(AR) rcs $(LIBNAME) $(OBJ) $(OBJ_CXX)
 
-re: clean all
+wipe:
+	rm *.o $(LIBNAME) || echo
+
+re: clean wipe all
+
+.PHONY: wipe
 

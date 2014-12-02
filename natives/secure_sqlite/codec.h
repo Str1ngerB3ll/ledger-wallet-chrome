@@ -9,6 +9,10 @@
 #ifndef _CODEC_H_
 #define _CODEC_H_
 
+extern "C" {
+extern void JLOG(const char *format);
+}
+
  class Codec
  {
 
@@ -20,7 +24,7 @@
  	virtual void decrypt(int page, unsigned char *data) = 0;
  	virtual const char *getAndResetError();
  	virtual void setPageSize(int pageSize);
- 	virtual ~Codec() {};
+ 	virtual ~Codec();
 
  	const void *getDb() const;
 	const unsigned char *getEncryptionKey() const;

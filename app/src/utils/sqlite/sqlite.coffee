@@ -61,23 +61,25 @@ _.extend ledger.sqlite,
   __listenners: {}
 
   sqlite3_integration_test: () ->
-    ledger.sqlite.sqlite3_open '/test.sqlite', (result) =>
+    before = _.now()
+    ledger.sqlite.sqlite3_open '/test-2.sqlite', (result) =>
       l result
       ledger.sqlite.sqlite3_key result.db, ledger.crypto.SHA256.hashString("merguez"), =>
         ledger.sqlite.sqlite3_exec result.db, "CREATE TABLE Test(iteration INTEGER, test TEXT);", (result) =>
           l "create result", result
-          test_insert result.db, 100, =>
-            l 'Insertion DONE'
-            #ledger.sqlite.sqlite3_close 0
+          ledger.sqlite.sqlite3_exec result.db, "BEGIN TRANSACTION", (result) =>
+          test_insert result.db, 5000, =>
+            ledger.sqlite.sqlite3_exec result.db, "END TRANSACTION", (result) =>
+              l 'Insertion DONE ', _.now() - before
+            ledger.sqlite.sqlite3_close 0
 
   sqlite3_integration_test_no_create: () ->
-    ledger.sqlite.sqlite3_open '/persistent/test.sqlite', (result) =>
-      l result
+    before = _.now()
+    ledger.sqlite.sqlite3_open '/test.sqlite', (result) =>
       ledger.sqlite.sqlite3_key result.db, ledger.crypto.SHA256.hashString("merguez"), =>
           l "create result", result
           test_insert result.db, 100, =>
-            l 'Insertion DONE', result
-            l result
+            l 'Insertion DONE ', (_.now() - before)
             #ledger.sqlite.sqlite3_close result.db
 
 

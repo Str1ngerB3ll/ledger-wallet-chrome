@@ -37,9 +37,14 @@ build_cpp: $(OBJ_CXX)
 link:
 	$(CPP) $(OBJ_CXX) $(LDFLAGS) -o $(PEXE_NAME)
 
-re: clean all
+wipe:
+	rm *.o $(PEXE_NAME) $(FINAL_PEXE_NAME) || echo
+
+re: wipe clean all
 
 finalize:
 	$(FINALIZE) $(PEXE_NAME) -o $(FINAL_PEXE_NAME)
 	cp $(FINAL_PEXE_NAME) ../../app/public/sqlite_bridge/
+
+.PHONY: wipe
 
