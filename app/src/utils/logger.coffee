@@ -196,7 +196,7 @@ class @ledger.utils.Logger
 
     # Add color
     if typeof args[0] is 'string'
-      args[0] = "%c" + args[0].replace(/%/,'%%')
+      args[0] = "%c" + args[0].replace(/%/g,'%%')
     else
       args.splice 0, 0, "%c"
     args.splice 1, 0, switch level
