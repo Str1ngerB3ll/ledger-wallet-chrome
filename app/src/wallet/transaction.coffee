@@ -224,11 +224,15 @@ class ledger.wallet.Transaction
   @return [Q.Promise] A closure
   ###
   @create: ({amount, fees, address, inputsPath, changePath}, callback = null) ->
+    @_logger().info "--- BEGIN CREATION ---"
     d = ledger.defer(callback)
+    d.fail (ex) ->
+      @_logger().error "Transaction creation failed", ex
+      @_logger().info "--- END CREATION ---"
     return d.rejectWithError(Errors.DustTransaction) && d.promise if amount.lte(Transaction.MINIMUM_OUTPUT_VALUE)
     return d.rejectWithError(Errors.NotEnoughFunds) && d.promise unless inputsPath?.length
     requiredAmount = amount.add(fees)
-
+    @_logger().info "Retrieving addresses from paths"
     ledger.api.UnspentOutputsRestClient.instance.getUnspentOutputsFromPaths inputsPath, (outputs, error) ->
       return d.rejectWithError(Errors.NetworkError, error) if error?
       # Collect each valid outputs and sort them by desired priority
@@ -242,6 +246,7 @@ class ledger.wallet.Transaction
       _.async.each validOutputs, (output, done, hasNext) =>
         ledger.api.TransactionsRestClient.instance.getRawTransaction output.transaction_hash, (rawTransaction, error) ->
           if error?
+            @_logger().info "Non fatal error", error
             hadNetworkFailure = yes
           else
             output.raw = rawTransaction
@@ -254,6 +259,7 @@ class ledger.wallet.Transaction
             fees = fees.add(changeAmount) if changeAmount.lte(5400)
             # We have reached our required amount. It's time to prepare the transaction
             transaction = new Transaction(ledger.app.dongle, amount, fees, recipientAddress, finalOutputs, changePath)
+            @_logger().info "--- END CREATION ---"
             d.resolve(transaction)
           else if hasNext is true
             # Continue to collect funds
@@ -263,3 +269,5 @@ class ledger.wallet.Transaction
           else
             d.rejectWithError(Errors.NotEnoughFunds)
     d.promise
+
+  @_logger: -> ledger.utils.Logger.getLoggerByTag("Transaction")
