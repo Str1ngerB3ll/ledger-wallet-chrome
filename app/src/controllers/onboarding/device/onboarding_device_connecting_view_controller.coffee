@@ -25,11 +25,23 @@ class @OnboardingDeviceConnectingViewController extends @OnboardingViewControlle
 
   _navigateContinue: ->
     @_stopTimer()
+<<<<<<< HEAD
     ledger.app.dongle.getState (state) =>
       if state == ledger.dongle.States.LOCKED
         ledger.app.router.go '/onboarding/device/pin'
       else
         ledger.app.router.go '/onboarding/management/welcome'
+=======
+    ledger.app.wallet?.isFirmwareUpdateAvailable (isAvailable) =>
+      if isAvailable
+        ledger.app.router.go '/onboarding/device/update'
+      else
+        ledger.app.wallet.getState (state) =>
+          if state == ledger.wallet.States.LOCKED
+            ledger.app.router.go '/onboarding/device/pin'
+          else
+            ledger.app.router.go '/onboarding/management/welcome'
+>>>>>>> develop
 
   _navigateForged: ->
     @_stopTimer()
@@ -37,7 +49,16 @@ class @OnboardingDeviceConnectingViewController extends @OnboardingViewControlle
       if error?
         ledger.app.router.go '/onboarding/device/forged'
       else
+<<<<<<< HEAD
         @_navigateContinue()
+=======
+        ledger.app.wallet?.isFirmwareOverwriteOrUpdateAvailable (isAvailable) =>
+          if isAvailable and not ledger.fup.versions.Nano.CurrentVersion.Beta
+            ledger.app.setExecutionMode(ledger.app.Modes.FirmwareUpdate)
+            ledger.app.router.go '/update/index', {hidePreviousButton: yes}
+          else
+            @_navigateContinue()
+>>>>>>> develop
 
   _navigateError: ->
     @_stopTimer()

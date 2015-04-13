@@ -3,9 +3,17 @@ ledger.bitcoin.bitid ?= {}
 
 _.extend ledger.bitcoin.bitid,
 
+<<<<<<< HEAD
   # This path do not need a verified PIN to sign messages.
   ROOT_PATH: "0'/0xb11e'"
   CALLBACK_PROXY_URL: "http://dev.ledgerwallet.com:3000/api/bitid"
+=======
+  DEFAULT_DERIVATION_PATH: "0xb11e'"
+  CALLBACK_PROXY_URL: "http://www.ledgerwallet.com/api/bitid"
+
+  isValidUri: (uri) ->
+    uri.indexOf("bitid") == 0
+>>>>>>> develop
 
   _cache: {}
 

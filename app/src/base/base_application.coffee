@@ -149,6 +149,35 @@ class ledger.base.application.BaseApplication extends @EventEmitter
         return no
       yes
 
+<<<<<<< HEAD
+=======
+  _listenWalletEvents: () ->
+    # Wallet management & wallet events re-dispatching
+    @walletsManager.on 'connecting', (event, card) =>
+      DongleLogger().info('Connecting', card.id)
+      (Try => @onConnectingDongle(card)).printError()
+    @walletsManager.on 'connected', (event, wallet) =>
+      @connectWallet(wallet)
+
+  connectWallet: (wallet) ->
+    @wallet = wallet
+    @_dongleAttestationLock = off
+    DongleLogger().info("Connected", wallet.id)
+    wallet.once 'disconnected', =>
+      DongleLogger().info('Disconnected', wallet.id)
+      _.defer => (Try => @onDongleIsDisconnected(wallet)).printError()
+      @wallet = null
+    wallet.once 'unplugged', =>
+      (Try => @onDongleNeedsUnplug(wallet)).printError()
+    wallet.once 'state:unlocked', =>
+      DongleLogger().info('Dongle unlocked', wallet.id)
+      (Try => @onDongleIsUnlocked(wallet)).printError()
+    (Try => @onDongleConnected(wallet)).printError()
+    if wallet.isInBootloaderMode()
+      DongleLogger().info('Dongle is Bootloader mode', wallet.id)
+      (Try => @onDongleIsInBootloaderMode(wallet)).printError()
+
+>>>>>>> develop
   _listenDongleEvents: () ->
     # Dongle management & dongle events re-dispatching
     @donglesManager.on 'connecting', (event, device) =>

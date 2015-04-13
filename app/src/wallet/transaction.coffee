@@ -247,6 +247,7 @@ class ledger.wallet.Transaction
             output.raw = rawTransaction
             finalOutputs.push(output)
             collectedAmount = collectedAmount.add(Amount.fromSatoshi(output.value))
+            # Continue to collect funds
 
           if collectedAmount.gte(requiredAmount)
             changeAmount = collectedAmount.subtract(requiredAmount)
