@@ -20,15 +20,9 @@ class @Coinkite
 
   getExtendedPublickey: (callback) ->
     try
-<<<<<<< HEAD
-      ledger.app.dongle.getExtendedPublicKey @CK_PATH, (key) =>
+      ledger.app.dongle.getExtendedPublicKey Coinkite.CK_PATH, (key) =>
         @xpub = key._xpub58
-        ledger.bitcoin.bitid.signMessage "Coinkite", path: @CK_PATH, pubkey: key._xpub, (signature) =>
-=======
-      ledger.app.wallet.getExtendedPublicKey Coinkite.CK_PATH, (key) =>
-        @xpub = key._xpub58
-        ledger.app.wallet.signMessageWithBitId Coinkite.CK_PATH, "Coinkite", (signature) =>
->>>>>>> develop
+        ledger.bitcoin.bitid.signMessage "Coinkite", path: Coinkite.CK_PATH, pubkey: key._xpub, (signature) =>
           callback?({xpub: @xpub, signature: signature}, null)
     catch error
       callback?(null, error)
@@ -47,11 +41,7 @@ class @Coinkite
   getCosigner: (data, callback) ->
     @cosigner = null
     try
-<<<<<<< HEAD
-      ledger.app.dongle.getExtendedPublicKey @CK_PATH, (key) =>
-=======
       ledger.app.wallet.getExtendedPublicKey Coinkite.CK_PATH, (key) =>
->>>>>>> develop
         xpub = key._xpub58
         async.eachSeries data.cosigners, ((cosigner, finishedCallback) =>
           check = cosigner.xpubkey_check
@@ -91,11 +81,7 @@ class @Coinkite
 
   checkKeys: (check, callback) ->
     try
-<<<<<<< HEAD
-      ledger.app.dongle.getExtendedPublicKey @CK_PATH, (key) =>
-=======
-      ledger.app.wallet.getExtendedPublicKey Coinkite.CK_PATH, (key) =>
->>>>>>> develop
+      ledger.app.dongle.getExtendedPublicKey Coinkite.CK_PATH, (key) =>
         xpub = key._xpub58
         callback?(xpub.indexOf(check, xpub.length - check.length) > 0)
     catch error
@@ -106,12 +92,8 @@ class @Coinkite
     scripts = data.redeem_scripts
     tx = data.raw_unsigned_txn
     try
-      transaction = Bitcoin.Transaction.deserialize(tx);
-<<<<<<< HEAD
-      ledger.app.dongle.signP2SHTransaction(inputs, transaction, scripts, @CK_PATH)
-=======
-      ledger.app.wallet._lwCard.dongle.signP2SHTransaction_async(inputs, transaction, scripts, Coinkite.CK_PATH)
->>>>>>> develop
+      transaction = Bitcoin.Transaction.deserialize(tx)
+      ledger.app.dongle.signP2SHTransaction(inputs, transaction, scripts, Coinkite.CK_PATH)
       .then (result) =>
         url = '/v1/co-sign/' + @request + '/' + @cosigner + '/sign'
         @_setAuthHeaders(url)

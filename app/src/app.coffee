@@ -52,6 +52,7 @@ require @ledger.imports, ->
       @performDongleAttestation() if @isInWalletMode() and not dongle.isInBootloaderMode()
 
     onDongleCertificationDone: (dongle, error) ->
+      l 'ON CERTIF DONE'
       return unless @isInWalletMode()
       if not error?
         @emit 'dongle:connected', @dongle

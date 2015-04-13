@@ -13,11 +13,13 @@ _.extend @ledger.config,
     pullThrottleDelay: 1000
     pushDebounceDelay: 1000
   defaultLoggingLevel: "INFO"
-  btcshipDebug: false
+  btcshipDebug: on
 
 # Btcship logging
 @DEBUG = ledger.config.btcshipDebug
 
 Q.longStackSupport = true
+
+@l = console.log.bind(this)
 
 @configureApplication = (app) ->
