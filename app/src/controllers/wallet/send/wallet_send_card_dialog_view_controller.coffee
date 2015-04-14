@@ -46,6 +46,7 @@ class @WalletSendCardDialogViewController extends @DialogViewController
       @_updateValidableIndication()
 
   _updateUI: ->
+    l @params
     @_validationDetails = @params.transaction.getValidationDetails()
     @_validationDetails = _.extend @_validationDetails, @_buildValidableSettings(@_validationDetails)
     @view.keycard.setValidableValues @_validationDetails.validationCharacters

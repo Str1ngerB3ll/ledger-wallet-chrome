@@ -31,6 +31,7 @@ _.extend ledger.wallet,
 
     addresses = {}
     notFound = []
+
     _.async.each paths, (path, done, hasNext) ->
       # Hit the cache first
       address = ledger.wallet.HDWallet.instance?.cache?.get(path)
@@ -39,7 +40,6 @@ _.extend ledger.wallet,
         callback?(addresses, notFound) unless hasNext is true
         do done
         return
-
       ledger.tasks.AddressDerivationTask.instance.getPublicAddress path, (result, error) ->
         if error?
           notFound.push path

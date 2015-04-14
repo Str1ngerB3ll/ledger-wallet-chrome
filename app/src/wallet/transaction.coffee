@@ -95,29 +95,6 @@ class ledger.wallet.Transaction
     hash: @hash,
     raw: @getSignedTransaction()
 
-  getValidationDetails: () ->
-    indexes = []
-    if @_validationMode is ledger.wallet.transaction.Transaction.ValidationModes.SECURE_SCREEN
-      numberOfCharacters = parseInt(@_out.indexesKeyCard.substring(0, 2), 16)
-      indexesKeyCard = @_out.indexesKeyCard.substring(2, numberOfCharacters * 2 + 2)
-    else
-      indexesKeyCard = @_out.indexesKeyCard
-    amount = ''
-    if ledger.app.dongle.getIntFirmwareVersion() < ledger.dongle.Firmware.V1_4_13
-      stringifiedAmount = @amount.toString()
-      stringifiedAmount = _.str.lpad(stringifiedAmount, 9, '0')
-      decimalPart = stringifiedAmount.substr(stringifiedAmount.length - 8)
-      integerPart = stringifiedAmount.substr(0, stringifiedAmount.length - 8)
-      firstAmountValidationIndex = integerPart.length - 1
-      lastAmountValidationIndex = firstAmountValidationIndex
-      if decimalPart isnt "00000000"
-        lastAmountValidationIndex += 3
-
-    while indexesKeyCard.length >= 2
-      index = indexesKeyCard.substring(0, 2)
-      indexesKeyCard = indexesKeyCard.substring(2)
-      indexes.push parseInt(index, 16)
-
   # @param [Array<Object>] inputs
   # @param [String] changePath
   # @param [Function] callback
@@ -130,7 +107,7 @@ class ledger.wallet.Transaction
     .then (@_resumeData) =>
       @_validationMode = @_resumeData.authorizationRequired
       @authorizationPaired = @_resumeData.authorizationPaired
-      d.resolve()
+      d.resolve(this)
     .fail (error) =>
       d.rejectWithError(Errors.SignatureError)
     .done()
@@ -162,7 +139,7 @@ class ledger.wallet.Transaction
     )
     .then (@_transaction) =>
       @_isValidated = yes
-      _.defer => d.resolve()
+      _.defer => d.resolve(this)
     .fail (error) =>
       _.defer => d.rejectWithError(Errors.SignatureError, error)
     .done()
@@ -180,36 +157,67 @@ class ledger.wallet.Transaction
   #   @option [String] validationCharacters
   #   @option [Boolean] needsAmountValidation
   getValidationDetails: ->
-    details =
-      validationMode: @_validationMode
-      recipientsAddress:
-        text: @recipientAddress
-        indexes: @_resumeData.indexesKeyCard.match(/../g)
-      validationCharacters: (@recipientAddress[index] for index in @_resumeData.indexesKeyCard.match(/../g))
-      needsAmountValidation: false
-
-    # ~> 1.4.13 need validation on amount
-    if @dongle.getIntFirmwareVersion() < @dongle.Firmware.V1_4_13
+    indexes = []
+    if @_validationMode is ledger.wallet.Transaction.ValidationModes.SECURE_SCREEN
+      numberOfCharacters = parseInt(@_out.indexesKeyCard.substring(0, 2), 16)
+      indexesKeyCard = @_out.indexesKeyCard.substring(2, numberOfCharacters * 2 + 2)
+    else
+      indexesKeyCard = @_out.indexesKeyCard
+    amount = ''
+    if ledger.app.wallet.getIntFirmwareVersion() < ledger.dongle.Firmware.V1_4_13
       stringifiedAmount = @amount.toString()
       stringifiedAmount = _.str.lpad(stringifiedAmount, 9, '0')
-      # Split amount in integer and decimal parts
-      integerPart = stringifiedAmount.substr(0, stringifiedAmount.length - 8)
       decimalPart = stringifiedAmount.substr(stringifiedAmount.length - 8)
-      # Prepend to validationCharacters first digit of integer part,
-      # and 3 first digit of decimal part only if not empty.
-      amountChars = [integerPart.charAt(integerPart.length - 1)]
+      integerPart = stringifiedAmount.substr(0, stringifiedAmount.length - 8)
+      firstAmountValidationIndex = integerPart.length - 1
+      lastAmountValidationIndex = firstAmountValidationIndex
       if decimalPart isnt "00000000"
-        amountChars.concat decimalPart.substring(0,3).split('')
-      details.validationCharacters = amountChars.concat(details.validationCharacters)
-      # Compute amount indexes
-      firstIdx = integerPart.length - 1
-      lastIdx = if decimalPart is "00000000" then firstIdx else firstIdx+3
-      detail.amount =
-        text: stringifiedAmount
-        indexes: [firstIdx..lastIdx]
-      details.needsAmountValidation = true
+        lastAmountValidationIndex += 3
 
-    return details
+    while indexesKeyCard.length >= 2
+      index = indexesKeyCard.substring(0, 2)
+      indexesKeyCard = indexesKeyCard.substring(2)
+      indexes.push parseInt(index, 16)
+
+    details =
+      validationMode: @_validationMode
+      amount:
+        text: stringifiedAmount
+        indexes: [firstAmountValidationIndex..lastAmountValidationIndex]
+      recipientsAddress:
+        text: @recipientAddress
+        indexes: indexes
+      validationCharacters: @getKeycardValidationCharacters()
+
+    details.needsAmountValidation = details.amount.indexes.length > 0
+    details
+
+  getKeycardValidationCharacters: () ->
+    indexes = []
+    keycardIndexes = []
+
+    if ledger.app.wallet.getIntFirmwareVersion() < ledger.wallet.Firmware.V1_4_13
+      stringifiedAmount = @amount.toString()
+      stringifiedAmount = _.str.lpad(stringifiedAmount, 9, '0')
+      decimalPart = stringifiedAmount.substr(stringifiedAmount.length - 8)
+      integerPart = stringifiedAmount.substr(0, stringifiedAmount.length - 8)
+      keycardIndexes.push integerPart.charAt(integerPart.length - 1)
+      if decimalPart isnt "00000000"
+        keycardIndexes.push decimalPart.charAt(0)
+        keycardIndexes.push decimalPart.charAt(1)
+        keycardIndexes.push decimalPart.charAt(2)
+
+    if @_validationMode is ledger.wallet.transaction.Transaction.ValidationModes.SECURE_SCREEN
+      numberOfCharacters = parseInt(@_out.indexesKeyCard.substring(0, 2), 16)
+      indexesKeyCard = @_out.indexesKeyCard.substring(2, numberOfCharacters * 2 + 2)
+    else
+      indexesKeyCard = @_out.indexesKeyCard
+    while indexesKeyCard.length >= 2
+      index = indexesKeyCard.substring(0, 2)
+      indexesKeyCard = indexesKeyCard.substring(2)
+      indexes.push parseInt(index, 16)
+    keycardIndexes.push @recipientAddress[index] for index in indexes
+    keycardIndexes
 
   ###
   Creates a new transaction asynchronously. The created transaction will only be initialized (i.e. it will only retrieve
@@ -224,17 +232,19 @@ class ledger.wallet.Transaction
   @return [Q.Promise] A closure
   ###
   @create: ({amount, fees, address, inputsPath, changePath}, callback = null) ->
+    l amount, fees, address, inputsPath, changePath
     @_logger().info "--- BEGIN CREATION ---"
     d = ledger.defer(callback)
-    d.fail (ex) ->
+    d.promise.fail (ex) ->
       @_logger().error "Transaction creation failed", ex
       @_logger().info "--- END CREATION ---"
     return d.rejectWithError(Errors.DustTransaction) && d.promise if amount.lte(Transaction.MINIMUM_OUTPUT_VALUE)
     return d.rejectWithError(Errors.NotEnoughFunds) && d.promise unless inputsPath?.length
     requiredAmount = amount.add(fees)
-    @_logger().info "Retrieving addresses from paths"
-    ledger.api.UnspentOutputsRestClient.instance.getUnspentOutputsFromPaths inputsPath, (outputs, error) ->
+    @_logger().info "Retrieving unspent outputs from paths"
+    ledger.api.UnspentOutputsRestClient.instance.getUnspentOutputsFromPaths inputsPath, (outputs, error) =>
       return d.rejectWithError(Errors.NetworkError, error) if error?
+      @_logger().info "Outputs retrieved"
       # Collect each valid outputs and sort them by desired priority
       validOutputs = _(output for output in outputs when output.paths.length > 0).sortBy (output) ->  -output['confirmatons']
       return d.rejectWithError(Errors.NotEnoughFunds) if validOutputs.length == 0
@@ -244,7 +254,7 @@ class ledger.wallet.Transaction
 
       # For each valid outputs we try to get its raw transaction.
       _.async.each validOutputs, (output, done, hasNext) =>
-        ledger.api.TransactionsRestClient.instance.getRawTransaction output.transaction_hash, (rawTransaction, error) ->
+        ledger.api.TransactionsRestClient.instance.getRawTransaction output.transaction_hash, (rawTransaction, error) =>
           if error?
             @_logger().info "Non fatal error", error
             hadNetworkFailure = yes
@@ -256,9 +266,9 @@ class ledger.wallet.Transaction
 
           if collectedAmount.gte(requiredAmount)
             changeAmount = collectedAmount.subtract(requiredAmount)
-            fees = fees.add(changeAmount) if changeAmount.lte(5400)
+            fees = fees.add(changeAmount) if changeAmount.lte(Transaction.MINIMUM_OUTPUT_VALUE)
             # We have reached our required amount. It's time to prepare the transaction
-            transaction = new Transaction(ledger.app.dongle, amount, fees, recipientAddress, finalOutputs, changePath)
+            transaction = new Transaction(ledger.app.dongle, amount, fees, address, finalOutputs, changePath)
             @_logger().info "--- END CREATION ---"
             d.resolve(transaction)
           else if hasNext is true

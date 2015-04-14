@@ -366,6 +366,7 @@ class @ledger.dongle.Dongle extends EventEmitter
       .then =>
         return @_btchip.signMessageSign_async(new ByteString(_pin, ASCII))
       .then (sig) =>
+        l "SIGNATURE", sig
         signedMessage = @_convertMessageSignature(pubKey, message, sig.signature)
         d.resolve(signedMessage)
       .catch (error) ->

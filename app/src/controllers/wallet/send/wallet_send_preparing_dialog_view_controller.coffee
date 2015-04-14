@@ -14,7 +14,7 @@ class @WalletSendPreparingDialogViewController extends @DialogViewController
     # fetch amount
     amount = ledger.Amount.fromBtc(@params.amount)
     fee = ledger.wallet.Transaction.DEFAULT_FEES
-    ledger.wallet.Transaction.createAndPrepare amount, fee, @params.address, account, account, (transaction, error) =>
+    account.createTransaction amount: amount, fees: fee, address: @params.address, (transaction, error) =>
       return if not @isShown()
       if error?
         reason = switch error.code
