@@ -130,10 +130,6 @@ class ledger.wallet.Transaction
     if not @_resumeData? or not @_validationMode?
       Errors.throw('Transaction must me prepared before validation')
     d = ledger.defer(callback)
-    l 'Transaction validate'
-    l @_btInputs, @_btcAssociatedKeyPath, @changePath, @recipientAddress, @amount, @fees,
-      validationKey,
-      @_resumeData
     @dongle.createPaymentTransaction(
       @_btInputs, @_btcAssociatedKeyPath, @changePath, @recipientAddress, @amount, @fees,
       undefined, # Default lockTime
@@ -142,7 +138,6 @@ class ledger.wallet.Transaction
       @_resumeData
     )
     .then (@_transaction) =>
-      l 'DONE'
       @_isValidated = yes
       _.defer => d.resolve(this)
     .fail (error) =>
