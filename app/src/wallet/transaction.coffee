@@ -89,9 +89,9 @@ class ledger.wallet.Transaction
   setHash: (hash) -> @hash = hash
 
   serialize: ->
-    amount: @amount.toNumber(),
+    amount: @amount.toSatoshiNumber(),
     address: @receiverAddress,
-    fee: @fees.toNumber(),
+    fee: @fees.toSatoshiNumber(),
     hash: @hash,
     raw: @getSignedTransaction()
 
@@ -130,14 +130,19 @@ class ledger.wallet.Transaction
     if not @_resumeData? or not @_validationMode?
       Errors.throw('Transaction must me prepared before validation')
     d = ledger.defer(callback)
+    l 'Transaction validate'
+    l @_btInputs, @_btcAssociatedKeyPath, @changePath, @recipientAddress, @amount, @fees,
+      validationKey,
+      @_resumeData
     @dongle.createPaymentTransaction(
       @_btInputs, @_btcAssociatedKeyPath, @changePath, @recipientAddress, @amount, @fees,
       undefined, # Default lockTime
       undefined, # Default sigHash
       validationKey,
-      resumeData
+      @_resumeData
     )
     .then (@_transaction) =>
+      l 'DONE'
       @_isValidated = yes
       _.defer => d.resolve(this)
     .fail (error) =>
@@ -159,12 +164,12 @@ class ledger.wallet.Transaction
   getValidationDetails: ->
     indexes = []
     if @_validationMode is ledger.wallet.Transaction.ValidationModes.SECURE_SCREEN
-      numberOfCharacters = parseInt(@_out.indexesKeyCard.substring(0, 2), 16)
-      indexesKeyCard = @_out.indexesKeyCard.substring(2, numberOfCharacters * 2 + 2)
+      numberOfCharacters = parseInt(@_resumeData.indexesKeyCard.substring(0, 2), 16)
+      indexesKeyCard = @_resumeData.indexesKeyCard.substring(2, numberOfCharacters * 2 + 2)
     else
-      indexesKeyCard = @_out.indexesKeyCard
+      indexesKeyCard = @_resumeData.indexesKeyCard
     amount = ''
-    if ledger.app.wallet.getIntFirmwareVersion() < ledger.dongle.Firmware.V1_4_13
+    if ledger.app.dongle.getIntFirmwareVersion() < ledger.dongle.Firmware.V1_4_13
       stringifiedAmount = @amount.toString()
       stringifiedAmount = _.str.lpad(stringifiedAmount, 9, '0')
       decimalPart = stringifiedAmount.substr(stringifiedAmount.length - 8)
@@ -196,7 +201,7 @@ class ledger.wallet.Transaction
     indexes = []
     keycardIndexes = []
 
-    if ledger.app.wallet.getIntFirmwareVersion() < ledger.wallet.Firmware.V1_4_13
+    if ledger.app.dongle.getIntFirmwareVersion() < ledger.dongle.Firmware.V1_4_13
       stringifiedAmount = @amount.toString()
       stringifiedAmount = _.str.lpad(stringifiedAmount, 9, '0')
       decimalPart = stringifiedAmount.substr(stringifiedAmount.length - 8)
@@ -207,11 +212,11 @@ class ledger.wallet.Transaction
         keycardIndexes.push decimalPart.charAt(1)
         keycardIndexes.push decimalPart.charAt(2)
 
-    if @_validationMode is ledger.wallet.transaction.Transaction.ValidationModes.SECURE_SCREEN
-      numberOfCharacters = parseInt(@_out.indexesKeyCard.substring(0, 2), 16)
-      indexesKeyCard = @_out.indexesKeyCard.substring(2, numberOfCharacters * 2 + 2)
+    if @_validationMode is ledger.wallet.Transaction.ValidationModes.SECURE_SCREEN
+      numberOfCharacters = parseInt(@_resumeData.indexesKeyCard.substring(0, 2), 16)
+      indexesKeyCard = @_resumeData.indexesKeyCard.substring(2, numberOfCharacters * 2 + 2)
     else
-      indexesKeyCard = @_out.indexesKeyCard
+      indexesKeyCard = @_resumeData.indexesKeyCard
     while indexesKeyCard.length >= 2
       index = indexesKeyCard.substring(0, 2)
       indexesKeyCard = indexesKeyCard.substring(2)
@@ -232,7 +237,6 @@ class ledger.wallet.Transaction
   @return [Q.Promise] A closure
   ###
   @create: ({amount, fees, address, inputsPath, changePath}, callback = null) ->
-    l amount, fees, address, inputsPath, changePath
     @_logger().info "--- BEGIN CREATION ---"
     d = ledger.defer(callback)
     d.promise.fail (ex) ->

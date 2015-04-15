@@ -448,16 +448,15 @@ class @ledger.dongle.Dongle extends EventEmitter
         authorization && new ByteString(authorization, HEX),
         resumeData
       ).then (result) ->
-        switch typeof result
-          when 'object'
-            result.scriptData = result.scriptData.toString(HEX)
-            result.trustedInputs = (trustedInput.toString(HEX) for trustedInput in result.trustedInputs)
-            result.publicKeys = (publicKey.toString(HEX) for publicKey in result.publicKeys)
-            result.authorizationPaired = result.authorizationPaired.toString(HEX) if result.authorizationPaired?
-            result.authorizationReference = result.authorizationReference.toString(HEX) if result.authorizationReference?
-          when 'string'
-            result = result.toString(HEX)
-        return result
+        if _.isKindOf(result, ByteString)
+          result = result.toString(HEX)
+        else
+          result.scriptData = result.scriptData.toString(HEX)
+          result.trustedInputs = (trustedInput.toString(HEX) for trustedInput in result.trustedInputs)
+          result.publicKeys = (publicKey.toString(HEX) for publicKey in result.publicKeys)
+          result.authorizationPaired = result.authorizationPaired.toString(HEX) if result.authorizationPaired?
+          result.authorizationReference = result.authorizationReference.toString(HEX) if result.authorizationReference?
+        result
 
   ###
   @return [Q.Promise]

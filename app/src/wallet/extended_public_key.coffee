@@ -40,7 +40,7 @@ class ledger.wallet.ExtendedPublicKey
         result = sha256.finalize(publicKey.toString(HEX));
         result = new ByteString(JSUCrypt.utils.byteArrayToHexStr(result), HEX)
         result = ripemd160.finalize(result.toString(HEX))
-        fingerprint = ((result[0] << 24) | (result[1] << 16) | (result[2] << 8) | result[3]) >>> 0
+        fingerprint = parseInt(new ByteString(JSUCrypt.utils.byteArrayToHexStr(result), HEX).bytes(0, 4).toString(HEX), 16)
         finalize fingerprint
     else
       finalize 0

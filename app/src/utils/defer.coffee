@@ -18,7 +18,6 @@
   defer.oldReject = defer.reject
   defer.resolve = (args...) -> @oldResolve(args...); return @
   defer.reject = (args...) -> @oldReject(args...); return @
-
   # CompletionClosure legacy
   defer.complete = (value, error) ->
     if error?
@@ -26,7 +25,7 @@
     else
       @resolve(value)
   defer.onComplete = defer.onFulfilled
-
+  defer.promise.onComplete = defer.onFulfilled.bind(defer)
   defer.onFulfilled(callback) if isCallback
 
   return defer
